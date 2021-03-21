@@ -49,6 +49,10 @@ function Queue(db, name, opts) {
         this.deadQueue = opts.deadQueue
         this.maxRetries = opts.maxRetries || 5
     }
+
+    if (opts.cosmos) {
+        this.cosmos =  { shard_key: opts.cosmos.shard_key, shard_value: opts.cosmos.shard_value };
+    }
 }
 
 Queue.prototype.createIndexes = function(callback) {
@@ -90,6 +94,13 @@ Queue.prototype.add = function(payload, opts, callback) {
             payload  : payload,
         })
     }
+
+    if (self.cosmos && self.cosmos.shard_key) {
+        for (const msg of msgs) {
+            msg[self.cosmos.shard_key] = self.cosmos.shard_value;
+        }
+    }
+
 
     self.col.insertMany(msgs, function(err, results) {
         if (err) return callback(err)
